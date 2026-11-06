@@ -1,0 +1,8 @@
+<menu>
+    <Services>
+        <Warpgate VisibleName="Warpgate" cssClass="fa fa-shield fa-fw">
+            <Settings order="10" url="/ui/warpgate/"/>
+            <LogFile order="20" VisibleName="Log File" url="/ui/diagnostics/log/core/warpgate"/>
+        </Warpgate>
+    </Services>
+</menu>

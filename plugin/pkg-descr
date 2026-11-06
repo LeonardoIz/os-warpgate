@@ -1,0 +1,5 @@
+Warpgate is a smart SSH, HTTPS, MySQL, PostgreSQL, Kubernetes, VNC and RDP bastion.
+This plugin bundles a FreeBSD build of the unmodified upstream release and runs it as
+a service; targets, users and roles are managed in Warpgate's own admin UI.
+
+WWW: https://github.com/warp-tech/warpgate

@@ -1,0 +1,13 @@
+diff --git a/warpgate/src/commands/setup.rs b/warpgate/src/commands/setup.rs
+index c1ec7ae..aaf415a 100644
+--- a/warpgate/src/commands/setup.rs
++++ b/warpgate/src/commands/setup.rs
+@@ -141,6 +141,8 @@ impl Answers {
+             );
+             #[cfg(target_os = "linux")]
+             let default_data_path = "/var/lib/warpgate";
++            #[cfg(target_os = "freebsd")]
++            let default_data_path = "/var/db/warpgate";
+             #[cfg(target_os = "macos")]
+             let default_data_path = "/usr/local/var/lib/warpgate";
+             dialoguer::Input::with_theme(&theme)

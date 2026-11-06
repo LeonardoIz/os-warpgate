@@ -1,0 +1,440 @@
+<form>
+    <tab id="warpgate-general" description="General">
+        <field>
+            <id>general.enabled</id>
+            <label>Enabled</label>
+            <type>checkbox</type>
+        </field>
+        <field>
+            <id>general.listen_address</id>
+            <label>Listen address</label>
+            <type>text</type>
+            <help>Address all listeners bind to. :: is IPv6 only on FreeBSD; 127.0.0.1 when only a local reverse proxy should reach Warpgate.</help>
+        </field>
+        <field>
+            <id>general.external_host</id>
+            <label>External host</label>
+            <type>text</type>
+            <help>Hostname users reach Warpgate on, used for URLs and cookies. Required behind a reverse proxy; empty uses the request host.</help>
+        </field>
+        <field>
+            <id>general.tls_certificate</id>
+            <label>TLS certificate</label>
+            <type>dropdown</type>
+            <help>Certificate from System: Trust used by all TLS listeners (HTTPS, MySQL, PostgreSQL, Kubernetes, VNC, RDP). Default: the self-signed certificate Warpgate generated.</help>
+        </field>
+        <field>
+            <type>header</type>
+            <label>Logging</label>
+        </field>
+        <field>
+            <id>general.log_retention</id>
+            <label>Log retention</label>
+            <type>text</type>
+            <help>How long session logs are kept in the database. Duration, e.g. 30m, 1day, 7days.</help>
+        </field>
+        <field>
+            <id>general.log_audit_retention</id>
+            <label>Audit log retention</label>
+            <type>text</type>
+            <help>Default: about 1 year. Duration, e.g. 30m, 1day, 7days.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.log_format</id>
+            <label>Log format</label>
+            <type>dropdown</type>
+            <help>Format of the service log (Services: Warpgate: Log File).</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.debug</id>
+            <label>Debug logging</label>
+            <type>dropdown</type>
+            <help>Verbose service log for troubleshooting.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.log_send_to</id>
+            <label>Forward logs to socket</label>
+            <type>text</type>
+            <help>Also send structured log events to this UNIX datagram socket.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <type>header</type>
+            <label>Database and API</label>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.database_url</id>
+            <label>Database URL</label>
+            <type>text</type>
+            <help>Default: sqlite:/var/db/warpgate/db. Use Tools: Copy database before switching to PostgreSQL or MySQL.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.admin_token</id>
+            <label>Admin API token</label>
+            <type>password</type>
+            <help>Enables an API token (header X-Warpgate-Token) that acts as the first admin user. Empty disables it.</help>
+            <advanced>true</advanced>
+        </field>
+    </tab>
+    <tab id="warpgate-https" description="HTTPS">
+        <field>
+            <id>general.http_port</id>
+            <label>Port</label>
+            <type>text</type>
+            <help>Web UI and HTTP targets. Must not collide with the OPNsense web GUI port.</help>
+        </field>
+        <field>
+            <id>general.http_external_port</id>
+            <label>External port</label>
+            <type>text</type>
+            <help>Port users connect to on a reverse proxy (usually 443), used to build URLs.</help>
+        </field>
+        <field>
+            <id>general.http_trust_x_forwarded</id>
+            <label>Behind a reverse proxy</label>
+            <type>checkbox</type>
+            <help>Trust X-Forwarded-* headers for client address, scheme and host. Enable only if Warpgate is reachable exclusively through the proxy.</help>
+        </field>
+        <field>
+            <id>general.http_external_host</id>
+            <label>External host</label>
+            <type>text</type>
+            <help>Hostname clients use for this listener, if different from the global external host.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.http_proxy_protocol</id>
+            <label>PROXY protocol</label>
+            <type>checkbox</type>
+            <help>Accept HAProxy PROXY protocol v1/v2 headers (only when every connection comes from such a proxy).</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.http_session_max_age</id>
+            <label>Session lifetime</label>
+            <type>text</type>
+            <help>Idle web session lifetime. Duration, e.g. 30m, 1day, 7days.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.http_cookie_max_age</id>
+            <label>Cookie lifetime</label>
+            <type>text</type>
+            <help>Duration, e.g. 30m, 1day, 7days.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.http_certificate</id>
+            <label>Certificate</label>
+            <type>dropdown</type>
+            <help>Certificate from System: Trust. Default: the general TLS certificate.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.http_sni_certificates</id>
+            <label>SNI certificates</label>
+            <type>select_multiple</type>
+            <help>Additional certificates picked by hostname (SNI), e.g. for HTTP targets on their own domains.</help>
+            <advanced>true</advanced>
+        </field>
+    </tab>
+    <tab id="warpgate-ssh" description="SSH">
+        <field>
+            <id>general.ssh_enabled</id>
+            <label>Enabled</label>
+            <type>checkbox</type>
+        </field>
+        <field>
+            <id>general.ssh_port</id>
+            <label>Port</label>
+            <type>text</type>
+            <help>Must not collide with the OPNsense SSH port.</help>
+        </field>
+        <field>
+            <id>general.ssh_host_key_verification</id>
+            <label>Target host key verification</label>
+            <type>dropdown</type>
+            <help>What to do with unknown target host keys. Only applied when the database is first created; later change it in the admin UI.</help>
+        </field>
+        <field>
+            <id>general.ssh_inactivity_timeout</id>
+            <label>Inactivity timeout</label>
+            <type>text</type>
+            <help>Duration, e.g. 30m, 1day, 7days.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.ssh_keepalive_interval</id>
+            <label>Keepalive interval</label>
+            <type>text</type>
+            <help>Empty disables keepalives. Duration, e.g. 30m, 1day, 7days.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.ssh_target_handshake_timeout</id>
+            <label>Target handshake timeout</label>
+            <type>text</type>
+            <help>Duration, e.g. 30m, 1day, 7days.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.ssh_external_host</id>
+            <label>External host</label>
+            <type>text</type>
+            <help>Hostname clients use for this listener, if different from the global external host.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.ssh_external_port</id>
+            <label>External port</label>
+            <type>text</type>
+            <help>Port clients connect to (e.g. on a port forward or proxy), used to build URLs and connection hints.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.ssh_proxy_protocol</id>
+            <label>PROXY protocol</label>
+            <type>checkbox</type>
+            <help>Accept HAProxy PROXY protocol v1/v2 headers (only when every connection comes from such a proxy).</help>
+            <advanced>true</advanced>
+        </field>
+    </tab>
+    <tab id="warpgate-protocols" description="Protocols">
+        <field>
+            <type>header</type>
+            <label>MySQL</label>
+        </field>
+        <field>
+            <id>general.mysql_enabled</id>
+            <label>Enabled</label>
+            <type>checkbox</type>
+        </field>
+        <field>
+            <id>general.mysql_port</id>
+            <label>Port</label>
+            <type>text</type>
+        </field>
+        <field>
+            <id>general.mysql_advertised_version</id>
+            <label>Advertised version</label>
+            <type>text</type>
+            <help>Server version announced to clients; set it to the version of your targets if clients need it.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.mysql_external_host</id>
+            <label>External host</label>
+            <type>text</type>
+            <help>Hostname clients use for this listener, if different from the global external host.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.mysql_external_port</id>
+            <label>External port</label>
+            <type>text</type>
+            <help>Port clients connect to (e.g. on a port forward or proxy), used to build URLs and connection hints.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.mysql_proxy_protocol</id>
+            <label>PROXY protocol</label>
+            <type>checkbox</type>
+            <help>Accept HAProxy PROXY protocol v1/v2 headers (only when every connection comes from such a proxy).</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.mysql_certificate</id>
+            <label>Certificate</label>
+            <type>dropdown</type>
+            <help>Certificate from System: Trust. Default: the general TLS certificate.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <type>header</type>
+            <label>PostgreSQL</label>
+        </field>
+        <field>
+            <id>general.postgres_enabled</id>
+            <label>Enabled</label>
+            <type>checkbox</type>
+        </field>
+        <field>
+            <id>general.postgres_port</id>
+            <label>Port</label>
+            <type>text</type>
+        </field>
+        <field>
+            <id>general.postgres_external_host</id>
+            <label>External host</label>
+            <type>text</type>
+            <help>Hostname clients use for this listener, if different from the global external host.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.postgres_external_port</id>
+            <label>External port</label>
+            <type>text</type>
+            <help>Port clients connect to (e.g. on a port forward or proxy), used to build URLs and connection hints.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.postgres_proxy_protocol</id>
+            <label>PROXY protocol</label>
+            <type>checkbox</type>
+            <help>Accept HAProxy PROXY protocol v1/v2 headers (only when every connection comes from such a proxy).</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.postgres_certificate</id>
+            <label>Certificate</label>
+            <type>dropdown</type>
+            <help>Certificate from System: Trust. Default: the general TLS certificate.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <type>header</type>
+            <label>Kubernetes</label>
+        </field>
+        <field>
+            <id>general.kubernetes_enabled</id>
+            <label>Enabled</label>
+            <type>checkbox</type>
+        </field>
+        <field>
+            <id>general.kubernetes_port</id>
+            <label>Port</label>
+            <type>text</type>
+        </field>
+        <field>
+            <id>general.kubernetes_session_max_age</id>
+            <label>Session lifetime</label>
+            <type>text</type>
+            <help>Duration, e.g. 30m, 1day, 7days.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.kubernetes_external_host</id>
+            <label>External host</label>
+            <type>text</type>
+            <help>Hostname clients use for this listener, if different from the global external host.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.kubernetes_external_port</id>
+            <label>External port</label>
+            <type>text</type>
+            <help>Port clients connect to (e.g. on a port forward or proxy), used to build URLs and connection hints.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.kubernetes_proxy_protocol</id>
+            <label>PROXY protocol</label>
+            <type>checkbox</type>
+            <help>Accept HAProxy PROXY protocol v1/v2 headers (only when every connection comes from such a proxy).</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.kubernetes_certificate</id>
+            <label>Certificate</label>
+            <type>dropdown</type>
+            <help>Certificate from System: Trust. Default: the general TLS certificate.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <type>header</type>
+            <label>VNC</label>
+        </field>
+        <field>
+            <id>general.vnc_enabled</id>
+            <label>Enabled</label>
+            <type>checkbox</type>
+        </field>
+        <field>
+            <id>general.vnc_port</id>
+            <label>Port</label>
+            <type>text</type>
+        </field>
+        <field>
+            <id>general.vnc_enable_ard_auth</id>
+            <label>Apple Remote Desktop auth</label>
+            <type>checkbox</type>
+            <help>Enable Apple-DH (ARD) authentication; unlike VeNCrypt it does not use TLS.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.vnc_external_host</id>
+            <label>External host</label>
+            <type>text</type>
+            <help>Hostname clients use for this listener, if different from the global external host.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.vnc_external_port</id>
+            <label>External port</label>
+            <type>text</type>
+            <help>Port clients connect to (e.g. on a port forward or proxy), used to build URLs and connection hints.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.vnc_proxy_protocol</id>
+            <label>PROXY protocol</label>
+            <type>checkbox</type>
+            <help>Accept HAProxy PROXY protocol v1/v2 headers (only when every connection comes from such a proxy).</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.vnc_certificate</id>
+            <label>Certificate</label>
+            <type>dropdown</type>
+            <help>Certificate from System: Trust. Default: the general TLS certificate.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <type>header</type>
+            <label>RDP</label>
+        </field>
+        <field>
+            <id>general.rdp_enabled</id>
+            <label>Enabled</label>
+            <type>checkbox</type>
+        </field>
+        <field>
+            <id>general.rdp_port</id>
+            <label>Port</label>
+            <type>text</type>
+        </field>
+        <field>
+            <id>general.rdp_external_host</id>
+            <label>External host</label>
+            <type>text</type>
+            <help>Hostname clients use for this listener, if different from the global external host.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.rdp_external_port</id>
+            <label>External port</label>
+            <type>text</type>
+            <help>Port clients connect to (e.g. on a port forward or proxy), used to build URLs and connection hints.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.rdp_proxy_protocol</id>
+            <label>PROXY protocol</label>
+            <type>checkbox</type>
+            <help>Accept HAProxy PROXY protocol v1/v2 headers (only when every connection comes from such a proxy).</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>general.rdp_certificate</id>
+            <label>Certificate</label>
+            <type>dropdown</type>
+            <help>Certificate from System: Trust. Default: the general TLS certificate.</help>
+            <advanced>true</advanced>
+        </field>
+    </tab>
+</form>

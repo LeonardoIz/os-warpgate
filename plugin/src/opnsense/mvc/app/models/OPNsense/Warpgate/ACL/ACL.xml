@@ -1,0 +1,9 @@
+<acl>
+    <page-services-warpgate>
+        <name>Services: Warpgate</name>
+        <patterns>
+            <pattern>ui/warpgate/*</pattern>
+            <pattern>api/warpgate/*</pattern>
+        </patterns>
+    </page-services-warpgate>
+</acl>

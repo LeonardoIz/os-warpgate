@@ -1,0 +1,2 @@
+# data in /var/db/warpgate and the warpgate user are kept on purpose
+/usr/local/etc/rc.d/warpgate onestop || true

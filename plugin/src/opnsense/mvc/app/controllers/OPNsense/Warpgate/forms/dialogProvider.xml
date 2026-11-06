@@ -1,0 +1,235 @@
+<form>
+        <field>
+            <id>provider.enabled</id>
+            <label>Enabled</label>
+            <type>checkbox</type>
+            <grid_view>
+                <width>6em</width>
+                <type>boolean</type>
+                <formatter>rowtoggle</formatter>
+            </grid_view>
+        </field>
+        <field>
+            <id>provider.name</id>
+            <label>Name</label>
+            <type>text</type>
+            <help>Identifier, also part of the return URL.</help>
+            <grid_view>
+            </grid_view>
+        </field>
+        <field>
+            <id>provider.label</id>
+            <label>Label</label>
+            <type>text</type>
+            <help>Text on the login button.</help>
+            <grid_view>
+            </grid_view>
+        </field>
+        <field>
+            <id>provider.type</id>
+            <label>Type</label>
+            <type>dropdown</type>
+            <grid_view>
+            </grid_view>
+        </field>
+        <field>
+            <id>provider.client_id</id>
+            <label>Client ID</label>
+            <type>text</type>
+        </field>
+        <field>
+            <id>provider.client_secret</id>
+            <label>Client secret</label>
+            <type>password</type>
+        </field>
+        <field>
+            <type>header</type>
+            <label>Custom OpenID Connect</label>
+        </field>
+        <field>
+            <id>provider.issuer_url</id>
+            <label>Issuer URL</label>
+            <type>text</type>
+        </field>
+        <field>
+            <id>provider.scopes</id>
+            <label>Scopes</label>
+            <type>text</type>
+            <help>Comma-separated.</help>
+        </field>
+        <field>
+            <id>provider.roles_claim</id>
+            <label>Roles claim</label>
+            <type>text</type>
+            <help>Token claim with the user groups for role mappings.</help>
+        </field>
+        <field>
+            <id>provider.admin_roles_claim</id>
+            <label>Admin roles claim</label>
+            <type>text</type>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.additional_trusted_audiences</id>
+            <label>Additional trusted audiences</label>
+            <type>text</type>
+            <help>Comma-separated.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.trust_unknown_audiences</id>
+            <label>Trust unknown audiences</label>
+            <type>checkbox</type>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <type>header</type>
+            <label>Role mappings (custom and Google)</label>
+        </field>
+        <field>
+            <id>provider.role_mappings</id>
+            <label>Role mappings</label>
+            <type>textbox</type>
+            <help>One mapping per line: group=role1,role2. Use * as group for a default role.</help>
+        </field>
+        <field>
+            <id>provider.admin_role_mappings</id>
+            <label>Admin role mappings</label>
+            <type>textbox</type>
+            <help>One mapping per line: group=role1,role2. Use * as group for a default role.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <type>header</type>
+            <label>Microsoft Entra ID / Apple / Google</label>
+        </field>
+        <field>
+            <id>provider.tenant</id>
+            <label>Tenant (Entra ID)</label>
+            <type>text</type>
+        </field>
+        <field>
+            <id>provider.key_id</id>
+            <label>Key ID (Apple)</label>
+            <type>text</type>
+        </field>
+        <field>
+            <id>provider.team_id</id>
+            <label>Team ID (Apple)</label>
+            <type>text</type>
+        </field>
+        <field>
+            <id>provider.admin_email</id>
+            <label>Admin email (Google)</label>
+            <type>text</type>
+            <help>Workspace admin for domain-wide delegation (group lookups).</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.service_account_email</id>
+            <label>Service account email (Google)</label>
+            <type>text</type>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.service_account_key</id>
+            <label>Service account key (Google)</label>
+            <type>textbox</type>
+            <help>PEM private key from the service account JSON key file.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <type>header</type>
+            <label>Users</label>
+        </field>
+        <field>
+            <id>provider.auto_create_users</id>
+            <label>Auto-create users</label>
+            <type>checkbox</type>
+            <help>Create a Warpgate user on first SSO login.</help>
+        </field>
+        <field>
+            <id>provider.credential_policy_http</id>
+            <label>Default HTTP credentials</label>
+            <type>text</type>
+            <help>For auto-created users. Comma-separated. e.g. sso or web.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.credential_policy_ssh</id>
+            <label>Default SSH credentials</label>
+            <type>text</type>
+            <help>Comma-separated.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.credential_policy_mysql</id>
+            <label>Default MySQL credentials</label>
+            <type>text</type>
+            <help>Comma-separated.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.credential_policy_postgres</id>
+            <label>Default PostgreSQL credentials</label>
+            <type>text</type>
+            <help>Comma-separated.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.disable_local_logout</id>
+            <label>Disable local logout</label>
+            <type>checkbox</type>
+            <help>Hide "log out from Warpgate" when the provider supports single logout.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <type>header</type>
+            <label>Return URL</label>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.return_url_domain</id>
+            <label>Return URL domain</label>
+            <type>dropdown</type>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.return_url_prefix</id>
+            <label>Return URL prefix</label>
+            <type>dropdown</type>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.return_domain_whitelist</id>
+            <label>Allowed return domains</label>
+            <type>text</type>
+            <help>Comma-separated.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <type>header</type>
+            <label>kubectl (kubelogin)</label>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.kubernetes_client_id</id>
+            <label>kubectl client ID</label>
+            <type>text</type>
+            <help>Public client id for kubelogin; must be in the additional trusted audiences.</help>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.kubernetes_client_secret</id>
+            <label>kubectl client secret</label>
+            <type>password</type>
+            <advanced>true</advanced>
+        </field>
+        <field>
+            <id>provider.kubernetes_scopes</id>
+            <label>kubectl scopes</label>
+            <type>text</type>
+            <help>Comma-separated.</help>
+            <advanced>true</advanced>
+        </field>
+</form>

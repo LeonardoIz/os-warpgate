@@ -1,0 +1,8 @@
+# upgrade: run the new binary; reinstall with kept settings: start again
+if /usr/local/etc/rc.d/warpgate enabled; then
+	if /usr/local/etc/rc.d/warpgate status >/dev/null 2>&1; then
+		/usr/local/etc/rc.d/warpgate restart
+	else
+		/usr/local/etc/rc.d/warpgate start
+	fi
+fi

@@ -1,0 +1,98 @@
+# Builds os-warpgate (plugin + the warpgate binary of PLUGIN_VERSION from this repo's releases) on FreeBSD,
+# same ABI as OPNsense, and publishes the signed pkg repository as the release repo-<ABI> (package + catalogue)
+# and the landing page, repo config and key on gh-pages (GitHub Pages times out on the 27 MB package).
+# Runs on plugin changes on main, when build-warpgate bumps the version, or manually.
+# Without the SIGNING_KEY secret the package is only uploaded as a workflow artifact.
+name: Publish plugin repository
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "plugin/**"
+      - "build/repo/**"
+      - "build/signing.pub"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-repo
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download warpgate binary
+        id: bin
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver=$(sed -n 's/^PLUGIN_VERSION=[[:space:]]*//p' plugin/Makefile)
+          gh release download "warpgate-v$ver" -D out/dist -p "warpgate-v$ver-x86_64-freebsd*"
+          bin=$(ls out/dist/*.sig | head -1)
+          echo "path=${bin%.sig}" >> "$GITHUB_OUTPUT"
+
+      - name: Build package and repository on FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        env:
+          SIGNING_KEY_PEM: ${{ secrets.SIGNING_KEY }}
+          BIN: ${{ steps.bin.outputs.path }}
+        with:
+          release: "15.1"
+          envs: SIGNING_KEY_PEM BIN
+          usesh: true
+          run: |
+            set -e
+            env ASSUME_ALWAYS_YES=yes pkg bootstrap -f >/dev/null
+            key=
+            if [ -n "$SIGNING_KEY_PEM" ]; then
+              (umask 077; printf '%s\n' "$SIGNING_KEY_PEM" > /tmp/signing.key)
+              key=/tmp/signing.key
+            fi
+            sh build/repo/build-repo.sh "$PWD/out/site" "$PWD/$BIN" $key
+            rm -f /tmp/signing.key
+
+      # upload-artifact rejects ':' in paths (FreeBSD:15:amd64)
+      - run: mkdir -p out/pkg && cp out/site/*/os-*.pkg out/pkg/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: os-warpgate
+          path: out/pkg/*.pkg
+
+      - name: Publish
+        env:
+          SIGNING_KEY_PEM: ${{ secrets.SIGNING_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$SIGNING_KEY_PEM" ]; then
+            echo "::warning::SIGNING_KEY not set, repository not published"
+            exit 0
+          fi
+          for dir in out/site/*:*; do
+            abi=$(basename "$dir")
+            tag="repo-$(echo "$abi" | tr : -)"
+            gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --latest=false \
+              --title "pkg repository ($abi)" \
+              --notes "Signed pkg repository for os-warpgate, used through warpgate.conf from https://leonardoiz.github.io/os-warpgate/. Managed by CI."
+            # package first, then the catalogue that points at it, then drop old packages
+            gh release upload "$tag" --clobber "$dir"/os-*.pkg
+            gh release upload "$tag" --clobber "$dir"/meta.conf "$dir"/meta "$dir"/packagesite.pkg "$dir"/data.pkg
+            current=$(cd "$dir" && ls os-*.pkg)
+            # grep exits 1 when there is nothing old to delete (pipefail)
+            old=$(gh release view "$tag" --json assets -q '.assets[].name' | grep '^os-.*\.pkg$' | grep -vxF "$current" || true)
+            for f in $old; do gh release delete-asset "$tag" "$f" -y; done
+            rm -rf "$dir"
+          done
+          # gh-pages: landing page, warpgate.conf, warpgate.pub (single orphan commit)
+          cd out/site
+          touch .nojekyll
+          git init -q -b gh-pages
+          git add -A
+          git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com \
+            commit -q -m "os-warpgate site from ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
