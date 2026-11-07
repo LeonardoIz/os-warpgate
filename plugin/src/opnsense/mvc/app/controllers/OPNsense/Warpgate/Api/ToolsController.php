@@ -10,13 +10,17 @@ use OPNsense\Core\Backend;
  */
 class ToolsController extends ApiControllerBase
 {
-    private function cli($action, $args = [])
+    /* copy/migrate may take wgctl.py's LONG_TIMEOUT (600 s); wait a little longer than that */
+    const LONG_TIMEOUT = 660;
+
+    private function cli($action, $args = [], $timeout = 120)
     {
-        $out = (new Backend())->configdpRun('warpgate cli', array_merge([$action], $args));
-        return json_decode($out ?? '', true) ?? ['ok' => false, 'output' => trim((string)$out)];
+        $out = (new Backend())->configdpRun('warpgate cli', array_merge([$action], $args), false, $timeout);
+        // configd's own errors may repeat the parameters (a database URL with its password): never echo them
+        return json_decode($out ?? '', true) ?? ['ok' => false, 'output' => gettext('No result from the Warpgate command, see the backend log.')];
     }
 
-    private function post($action, $fields = [])
+    private function post($action, $fields = [], $timeout = 120)
     {
         if (!$this->request->isPost()) {
             return ['ok' => false, 'output' => 'POST required'];
@@ -25,7 +29,7 @@ class ToolsController extends ApiControllerBase
         foreach ($fields as $field) {
             $args[] = trim((string)$this->request->getPost($field));
         }
-        return $this->cli($action, $args);
+        return $this->cli($action, $args, $timeout);
     }
 
     public function versionAction()
@@ -65,14 +69,14 @@ class ToolsController extends ApiControllerBase
 
     public function copyDatabaseAction()
     {
-        return $this->post('copy_database', ['url']);
+        return $this->post('copy_database', ['url'], self::LONG_TIMEOUT);
     }
 
     public function migrateDatabaseAction()
     {
         $destructive = $this->request->getPost('destructive') == '1' ? 'destructive' : '';
         return $this->request->isPost()
-            ? $this->cli('migrate_database', [trim((string)$this->request->getPost('steps')), $destructive])
+            ? $this->cli('migrate_database', [trim((string)$this->request->getPost('steps')), $destructive], self::LONG_TIMEOUT)
             : ['ok' => false, 'output' => 'POST required'];
     }
 }

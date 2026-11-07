@@ -14,7 +14,8 @@ KEY=${3:-}
 PUB=$ROOT/build/signing.pub
 URL=${SITE_URL:-https://leonardoiz.github.io/os-warpgate}
 RELEASES=${RELEASES_URL:-https://github.com/LeonardoIz/os-warpgate/releases/download}
-PLUGINS_REF=${PLUGINS_REF:-master}
+# OPNsense's plugin build system, pinned (stable/26.7 on 2026-11-07) so the package only changes with this repo
+PLUGINS_REF=${PLUGINS_REF:-79a5f88b7b27a706c10511ea5587c9d0e0dbdced}
 
 # trust boundary: only package a binary signed with our key
 openssl dgst -sha256 -verify "$PUB" -signature "$BIN.sig" "$BIN" >/dev/null ||
@@ -24,7 +25,7 @@ W=$(mktemp -d)
 trap 'rm -rf "$W"' EXIT
 
 # OPNsense plugin build system (Mk/, Scripts/, Templates/) from opnsense/plugins
-fetch -q -o - "https://codeload.github.com/opnsense/plugins/tar.gz/refs/heads/$PLUGINS_REF" |
+fetch -q -o - "https://codeload.github.com/opnsense/plugins/tar.gz/$PLUGINS_REF" |
     tar -xzf - -C "$W" --strip-components 1 "plugins-$PLUGINS_REF/Mk" "plugins-$PLUGINS_REF/Scripts" "plugins-$PLUGINS_REF/Templates"
 mkdir -p "$W/security"
 cp -R "$ROOT/plugin" "$W/security/warpgate"

@@ -1,6 +1,8 @@
 # Cross-builds the upstream warpgate release for FreeBSD and publishes it as a release of this repo
 # (tag warpgate-<upstream tag>). Runs daily, so new upstream releases get a FreeBSD build automatically.
 # A signed release then bumps PLUGIN_VERSION and publishes the plugin, so routers get it as a normal update.
+# Every phase is retried by the next run until it is done: a missing release is built, a signed release whose
+# version is not yet in plugin/Makefile is bumped (also when an earlier run failed after releasing).
 # Without the SIGNING_KEY secret the release is left as a draft and nothing is bumped: the package build
 # refuses unsigned binaries.
 name: Build warpgate
@@ -28,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Resolve tag
+      - name: Resolve tag and state
         id: tag
         env:
           GH_TOKEN: ${{ github.token }}
@@ -36,20 +38,25 @@ jobs:
         run: |
           tag=${INPUT_TAG:-$(gh release view -R warp-tech/warpgate --json tagName -q .tagName)}
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          if gh release view "warpgate-$tag" >/dev/null 2>&1; then
-            echo "release warpgate-$tag already exists, nothing to do"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
+          if ! gh release view "warpgate-$tag" >/dev/null 2>&1; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+          # bump only to a newer version (a manual run with an older tag just builds it)
+          current=$(sed -n 's/^PLUGIN_VERSION=[[:space:]]*//p' plugin/Makefile)
+          newest=$(printf '%s\n%s\n' "$current" "${tag#v}" | sort -V | tail -1)
+          if [ "$current" != "${tag#v}" ] && [ "$newest" = "${tag#v}" ]; then
+            echo "bump=true" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: actions/cache@v4
-        if: steps.tag.outputs.skip != 'true'
+        if: steps.tag.outputs.build == 'true'
         with:
           path: out/cache
           key: builder-${{ hashFiles('build/warpgate/Dockerfile') }}-${{ steps.tag.outputs.tag }}
           restore-keys: builder-${{ hashFiles('build/warpgate/Dockerfile') }}-
 
       - name: Build
-        if: steps.tag.outputs.skip != 'true'
+        if: steps.tag.outputs.build == 'true'
         env:
           SIGNING_KEY_PEM: ${{ secrets.SIGNING_KEY }}
         run: |
@@ -60,7 +67,7 @@ jobs:
           rm -f keys/signing.key
 
       - name: Release
-        if: steps.tag.outputs.skip != 'true'
+        if: steps.tag.outputs.build == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.tag.outputs.tag }}
@@ -70,16 +77,49 @@ jobs:
             --title "Warpgate $TAG for FreeBSD" \
             --notes "Unmodified upstream [warpgate $TAG](https://github.com/warp-tech/warpgate/releases/tag/$TAG), cross-compiled for FreeBSD (OPNsense). Patches applied: see build/warpgate/patches/."
 
-      - name: Bump plugin and publish
-        if: steps.tag.outputs.skip != 'true' && hashFiles('out/dist/*.sig') != ''
+      - name: Check the release can be bundled
+        id: ready
+        if: steps.tag.outputs.bump == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
+          if [ "$(gh release view "warpgate-$TAG" --json isDraft -q .isDraft)" = true ] ||
+             ! gh release view "warpgate-$TAG" --json assets -q '.assets[].name' | grep -q '\.sig$'; then
+            echo "::warning::warpgate-$TAG is a draft or unsigned: sign it (docs/releasing.md), the next run bumps"
+            exit 0
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+
+      # rc.d/warpgate stores the initial admin password only when it sees this upstream log line
+      - name: Check upstream still reports database initialisation
+        if: steps.ready.outputs.ok == 'true'
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/warp-tech/warpgate/${{ steps.tag.outputs.tag }}/warpgate/src/commands/setup.rs" |
+            grep -q 'initialising the database' ||
+            { echo "::error::upstream changed the bootstrap log line that rc.d/warpgate relies on"; exit 1; }
+
+      - name: Test the plugin against this version
+        if: steps.ready.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq python3-jinja2 python3-jsonschema python3-yaml
+          make test TAG="${{ steps.tag.outputs.tag }}"
+
+      - name: Bump plugin and publish
+        if: steps.ready.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          # main may have moved during the build: bump on top of it, never over it
+          git pull -q --rebase origin main
           sed -i "s/^PLUGIN_VERSION=.*/PLUGIN_VERSION=\t\t${TAG#v}/; /^PLUGIN_REVISION=/d" plugin/Makefile
           if ! git diff --quiet; then
-            git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com \
-              commit -qam "os-warpgate: bundle warpgate $TAG"
+            git commit -qam "os-warpgate: bundle warpgate $TAG"
             git push origin HEAD:main
           fi
           # pushes made with GITHUB_TOKEN do not trigger workflows; dispatch does

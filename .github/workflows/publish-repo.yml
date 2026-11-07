@@ -79,12 +79,14 @@ jobs:
             gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --latest=false \
               --title "pkg repository ($abi)" \
               --notes "Signed pkg repository for os-warpgate, used through warpgate.conf from https://leonardoiz.github.io/os-warpgate/. Managed by CI."
-            # package first, then the catalogue that points at it, then drop old packages
+            # package first, then the catalogue that points at it
             gh release upload "$tag" --clobber "$dir"/os-*.pkg
             gh release upload "$tag" --clobber "$dir"/meta.conf "$dir"/meta "$dir"/packagesite.pkg "$dir"/data.pkg
+            # keep the previous package too: a router may still use the previous catalogue for a while
             current=$(cd "$dir" && ls os-*.pkg)
-            # grep exits 1 when there is nothing old to delete (pipefail)
-            old=$(gh release view "$tag" --json assets -q '.assets[].name' | grep '^os-.*\.pkg$' | grep -vxF "$current" || true)
+            old=$(gh release view "$tag" --json assets -q \
+              "[.assets[] | select((.name | test(\"^os-.*\\\\.pkg$\")) and .name != \"$current\")]
+               | sort_by(.createdAt) | reverse | .[1:][].name")
             for f in $old; do gh release delete-asset "$tag" "$f" -y; done
             rm -rf "$dir"
           done

@@ -1,0 +1,2 @@
+# before the templates are generated: user and directories whose modes protect the generated secrets
+/usr/local/opnsense/scripts/OPNsense/Warpgate/setup_dirs.sh

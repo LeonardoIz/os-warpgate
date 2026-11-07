@@ -13,3 +13,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: make lint
+
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: out/test
+          key: test-deps-${{ hashFiles('tests/run.sh', 'plugin/Makefile') }}
+      # system python on ubuntu-24.04 is externally managed (PEP 668): use its packages
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq python3-jinja2 python3-jsonschema python3-yaml
+      - run: make test
+        env:
+          GH_TOKEN: ${{ github.token }}

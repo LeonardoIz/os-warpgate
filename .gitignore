@@ -3,3 +3,6 @@
 
 # everything generated: build cache, upstream checkouts, binaries, gh-pages checkout
 /out/
+
+# python bytecode from local test imports (would end up in the package)
+__pycache__/

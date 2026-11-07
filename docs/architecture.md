@@ -65,9 +65,10 @@ Warpgate admin UI; the first start points them at `/var/db/warpgate/recordings`.
 | model / forms (`settings.xml` with tabs, `dialogProvider.xml`) | `mvc/app/models/OPNsense/Warpgate/General.xml`, `controllers/OPNsense/Warpgate/forms/` |
 | settings + SSO grid API (`/api/warpgate/general/*`), service API, tools API (`/api/warpgate/tools/*`) | `controllers/OPNsense/Warpgate/Api/` |
 | page | `views/OPNsense/Warpgate/index.volt` |
-| `/etc/rc.conf.d/warpgate` (enable, debug, admin token), `/usr/local/etc/warpgate.yaml` | `service/templates/OPNsense/Warpgate/` |
+| `/etc/rc.conf.d/warpgate` (enable, debug; no secrets), `/usr/local/etc/warpgate/warpgate.yaml`, `/usr/local/etc/warpgate/private/warpgate.env` (admin token) | `service/templates/OPNsense/Warpgate/` |
 | CLI wrapper for the tools (validates input, runs as `warpgate`, drives interactive `recover-access` on a pty) | `scripts/OPNsense/Warpgate/wgctl.py` |
-| export of System: Trust certificates to `/var/db/warpgate/certs/` (run before each start) | `scripts/OPNsense/Warpgate/export_certs.php` |
+| user and directories (run by `+POST_INSTALL` before templates are generated, and before each start) | `scripts/OPNsense/Warpgate/setup_dirs.sh` |
+| export of System: Trust certificates to `/usr/local/etc/warpgate/certs/` (before each start and on Apply) | `scripts/OPNsense/Warpgate/export_certs.php` |
 | own log `/var/log/warpgate/`, viewer at *Services → Warpgate → Log File* | `service/templates/OPNsense/Syslog/local/warpgate.conf` |
 | remote syslog application, service registration | `etc/inc/plugins.inc.d/warpgate.inc` |
 | service | `etc/rc.d/warpgate` |
@@ -77,11 +78,31 @@ break or inject configuration. Generated passwords (recover access, create user)
 
 Runtime on the router:
 
-- `/usr/local/bin/warpgate` (from the package), run by `daemon(8)` as user `warpgate` with `--skip-securing-files`
-  (the rc script manages modes: config `0640 root:warpgate`, rc.conf.d `0600` because of the admin token)
-- `/var/db/warpgate/`: sqlite database, self-signed TLS certificate/key, `certs/` (exported), `recordings/`,
-  `initial-admin-password` until dismissed in the GUI; kept on uninstall, as are the `warpgate` user and the settings
-- first start (no `.setup-done` marker and no `db/`) runs `warpgate unattended-setup`
+- `/usr/local/bin/warpgate` (from the package), run by `daemon(8)` as user `warpgate` with `--skip-securing-files`.
+  The service status (rc, GUI widget) reports warpgate itself (`/var/run/warpgate.child.pid`), not the supervisor,
+  which keeps restarting warpgate every 5 s when it cannot start.
+- Files root writes live in root-owned directories, so the service account cannot redirect those writes with links.
+  OPNsense's template engine gives generated files the mode of their directory (and FreeBSD the directory's group),
+  so the directories carry the protection, also when the plugin is disabled:
+
+  | Path | Owner, mode | Contents |
+  |---|---|---|
+  | `/usr/local/etc/warpgate/` | `root:warpgate 0750` | `warpgate.yaml` (`0640`: SSO secrets, database URL) |
+  | `/usr/local/etc/warpgate/certs/` | `root:warpgate 0750` | exported certificates/keys and `self-signed.*`, `0640`, written atomically |
+  | `/usr/local/etc/warpgate/private/` | `root:wheel 0700` | `warpgate.env` (admin token, sourced by rc.subr), `initial-admin-password` |
+  | `/var/db/warpgate/` | `warpgate 0700` | default sqlite database, recordings; kept on uninstall |
+
+- Start (`rc.d/warpgate`): `prepare` (directories, self-signed certificate if missing, trust store export; an export
+  error keeps the last good files and stops the start), `warpgate check`, then `warpgate unattended-setup
+  --if-config-exists bootstrap` on the *configured* database: it creates the `admin` user only when the database has
+  no users, so it runs on every start and retries after a failed first start. The initial password is stored only
+  when that run initialised the database. The SSH host key policy chosen in the GUI reaches the new database through
+  upstream's config import.
+- Apply: templates, `prepare` and `warpgate check` run first; a rejected configuration leaves the running instance
+  untouched and is shown in the GUI. Then the usual stop/start.
+- The model checks what warpgate would otherwise only reject at start: duration syntax (same units as warpgate),
+  fields each SSO provider type requires, role mappings, credential kinds, listener ports (distinct, ≥ 1024, not the
+  OPNsense web GUI or SSH port).
 
 Reverse proxy: set *External host*, *Behind a reverse proxy* and *External port* (usually 443); the proxy must talk
 HTTPS to Warpgate. TCP proxies sending the PROXY protocol: enable it per listener. FreeBSD does not dual-stack `::`,

@@ -1,10 +1,11 @@
 # os-warpgate
 
-OPNsense plugin (`os-warpgate`) for [Warpgate](https://github.com/warp-tech/warpgate), the smart SSH/HTTPS/MySQL/PostgreSQL bastion.
+OPNsense plugin (`os-warpgate`) for [Warpgate](https://github.com/warp-tech/warpgate), the smart SSH, HTTPS, MySQL,
+PostgreSQL, Kubernetes, VNC and RDP bastion.
 
-The plugin is a thin harness around the unmodified upstream binary: it installs a signed FreeBSD build,
-generates `warpgate.yaml` from a few settings (listen address, HTTPS/SSH ports, external host) and runs it as a service.
-Targets, users and roles are managed in Warpgate's own admin UI, like on any other platform.
+The package bundles upstream's release cross-compiled for FreeBSD (no fork; one small FreeBSD patch, see
+[architecture](docs/architecture.md)), exposes all of Warpgate's settings in the OPNsense GUI, generates `warpgate.yaml`
+from them and runs Warpgate as a service. Targets, users, roles and recordings are managed in Warpgate's own admin UI.
 
 ## Install on OPNsense
 
@@ -33,8 +34,9 @@ Uninstalling the plugin keeps Warpgate's data (`/var/db/warpgate`) and settings;
 | `build/warpgate/` | Docker cross-build of upstream warpgate for FreeBSD, FreeBSD `patches/` |
 | `build/repo/` | package + signed pkg repository (`build-repo.sh`, runs on FreeBSD), repo config and landing page |
 | `build/genkey.sh`, `build/signing.pub` | signing key pair (private key in `keys/`) |
+| `tests/` | behaviour tests (`make test`), also run by CI and before each Warpgate version bump |
 | `docs/` | [architecture](docs/architecture.md), [development](docs/development.md), [signing](docs/signing.md), [releasing](docs/releasing.md) |
-| `.github/workflows/` | lint, warpgate builds, repository publishing |
+| `.github/workflows/` | lint and tests, warpgate builds, repository publishing |
 
 Git-ignored: `keys/` (private signing key), `out/` (cache, upstream sources, binaries, built repository and site).
 

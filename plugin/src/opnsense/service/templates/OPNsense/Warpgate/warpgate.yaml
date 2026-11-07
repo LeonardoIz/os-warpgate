@@ -9,11 +9,11 @@
 {% macro tls(wg, proto) %}
 {%   set ref = wg[proto + '_certificate'] or wg.tls_certificate %}
 {%   if ref %}
-  certificate: "/var/db/warpgate/certs/{{ ref }}.pem"
-  key: "/var/db/warpgate/certs/{{ ref }}.key"
+  certificate: "/usr/local/etc/warpgate/certs/{{ ref }}.pem"
+  key: "/usr/local/etc/warpgate/certs/{{ ref }}.key"
 {%   else %}
-  certificate: /var/db/warpgate/tls.certificate.pem
-  key: /var/db/warpgate/tls.key.pem
+  certificate: /usr/local/etc/warpgate/certs/self-signed.pem
+  key: /usr/local/etc/warpgate/certs/self-signed.key
 {%   endif %}
 {% endmacro %}
 {% macro listener(wg, addr, proto, toggle=true) %}
@@ -54,8 +54,8 @@ log:
 {%   if wg.http_sni_certificates %}
   sni_certificates:
 {%     for ref in wg.http_sni_certificates.split(',') %}
-    - certificate: "/var/db/warpgate/certs/{{ ref }}.pem"
-      key: "/var/db/warpgate/certs/{{ ref }}.key"
+    - certificate: "/usr/local/etc/warpgate/certs/{{ ref }}.pem"
+      key: "/usr/local/etc/warpgate/certs/{{ ref }}.key"
 {%     endfor %}
 {%   endif %}
 {{ listener(wg, addr, 'ssh') }}

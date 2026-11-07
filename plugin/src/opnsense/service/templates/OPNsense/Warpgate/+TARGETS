@@ -1,2 +1,3 @@
 rc.conf.d:/etc/rc.conf.d/warpgate
-warpgate.yaml:/usr/local/etc/warpgate.yaml
+warpgate.yaml:/usr/local/etc/warpgate/warpgate.yaml
+warpgate.env:/usr/local/etc/warpgate/private/warpgate.env

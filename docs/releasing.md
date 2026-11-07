@@ -4,9 +4,9 @@
 
 | Workflow | Trigger | Does |
 |---|---|---|
-| `ci.yml` | push / PR | `make lint` |
-| `build-warpgate.yml` | daily + manual (tag input) | if this repo has no `warpgate-<tag>` release for the latest upstream release: `make binary`, signed release, bump `PLUGIN_VERSION`, run `publish-repo` |
-| `publish-repo.yml` | push to `main` touching `plugin/` or `build/repo/`, manual | builds `os-warpgate` with the binary of `PLUGIN_VERSION` on FreeBSD 15.1, uploads the repository to the release `repo-FreeBSD-15-amd64` and force-publishes `gh-pages` (single commit) |
+| `ci.yml` | push / PR | `make lint`, `make test` |
+| `build-warpgate.yml` | daily + manual (tag input) | for the latest upstream release: `make binary` and a signed release if missing; then, if that release is signed and newer than `PLUGIN_VERSION`, check upstream's bootstrap log line, `make test` against it, bump `PLUGIN_VERSION` (rebased on `main`) and run `publish-repo`. Each phase is retried by the next run until done |
+| `publish-repo.yml` | push to `main` touching `plugin/` or `build/repo/`, manual | builds `os-warpgate` with the binary of `PLUGIN_VERSION` on FreeBSD 15.1, uploads the repository to the release `repo-FreeBSD-15-amd64` (keeps the previous package for routers with a cached catalogue) and force-publishes `gh-pages` (single commit) |
 
 With the `SIGNING_KEY` secret everything is automatic: a new upstream Warpgate release reaches routers as a normal
 plugin update within a day. Without it, binary releases stay drafts and nothing is published.

@@ -13,7 +13,8 @@ function warpgate_services()
                 'stop' => ['warpgate stop'],
             ],
             'name' => 'warpgate',
-            'pidfile' => '/var/run/warpgate.pid',
+            // warpgate itself, not daemon(8): the supervisor stays alive while it keeps failing to start
+            'pidfile' => '/var/run/warpgate.child.pid',
         ];
     }
 

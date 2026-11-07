@@ -4,10 +4,17 @@
             formatTokenizersUI();
             $('.selectpicker').selectpicker('refresh');
             updateServiceControlUI('warpgate');
-            const g = data.mainform.general;
-            const host = g.http_external_host || g.external_host || window.location.hostname;
-            $('#openWarpgate').attr('href', 'https://' + host + ':' + (g.http_external_port || g.http_port) + '/');
+            updateAdminLink(data.mainform.general);
         });
+
+        // link to Warpgate's own UI, from the saved settings (IPv6 hosts need brackets in a URL)
+        function updateAdminLink(g) {
+            let host = g.http_external_host || g.external_host || window.location.hostname.replace(/^\[|\]$/g, '');
+            if (host.includes(':')) {
+                host = '[' + host + ']';
+            }
+            $('#openWarpgate').attr('href', 'https://' + host + ':' + (g.http_external_port || g.http_port) + '/');
+        }
 
         $('#reconfigureAct').SimpleActionButton({
             onPreAction: function () {
@@ -17,6 +24,7 @@
             },
             onAction: function () {
                 updateServiceControlUI('warpgate');
+                ajaxGet('/api/warpgate/general/get', {}, function (data) { updateAdminLink(data.general); });
                 setTimeout(showInitialPassword, 3000);  // the first start creates the admin user
             }
         });
@@ -89,12 +97,12 @@
         });
         $('#toolCopyDb').click(function () {
             runTool(this, '/api/warpgate/tools/copy_database', {url: $('#toolCopyDbUrl').val()},
-                "{{ lang._('Copies all data into the target database (which must be empty). The running instance keeps using its current database. Continue?') }}");
+                "{{ lang._('Copies all data into the target database, which must be empty. The Warpgate service must be stopped, so nothing changes during the copy. Continue?') }}");
         });
         $('#toolMigrate').click(function () {
             runTool(this, '/api/warpgate/tools/migrate_database',
                 {steps: $('#toolMigrateSteps').val(), destructive: $('#toolMigrateDestructive').is(':checked') ? '1' : '0'},
-                "{{ lang._('Changes the database schema. Stop the service and back up /var/db/warpgate first. Continue?') }}");
+                "{{ lang._('Changes the database schema. The Warpgate service must be stopped; back up the database first. Continue?') }}");
         });
     });
 </script>
@@ -147,9 +155,9 @@
                 <div class="panel-heading">{{ lang._('Advanced: database') }}</div>
                 <div class="panel-body">
                     <div class="form-inline" style="margin-bottom: .5em;">
-                        <input class="form-control" id="toolCopyDbUrl" type="text" size="50" placeholder="postgres://user:password@host/warpgate"/>
+                        <input class="form-control" id="toolCopyDbUrl" type="password" autocomplete="off" size="50" placeholder="postgres://user:password@host/warpgate"/>
                         <button class="btn btn-default" id="toolCopyDb" type="button">{{ lang._('Copy database') }}</button>
-                        <small class="text-muted">{{ lang._('Then set General: Database URL to it and apply.') }}</small>
+                        <small class="text-muted">{{ lang._('Stop the service, copy, set General: Database URL to the target and apply. A new SQLite target needs ?mode=rwc (e.g. sqlite:/var/db/warpgate/new?mode=rwc). The URL is visible to local processes while copying: use a temporary database password and change it afterwards.') }}</small>
                     </div>
                     <div class="form-inline">
                         <input class="form-control" id="toolMigrateSteps" type="number" value="1" style="width: 6em;"/>
